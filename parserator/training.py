@@ -27,10 +27,15 @@ def trainModel(training_data, module, model_path,
 
     # train model
     trainer = pycrfsuite.Trainer(verbose=False, params=params_to_set)
-    for xseq, yseq in zip(X, Y):
-        trainer.append(xseq, yseq)
+    for index, xseq_yseq in enumerate(zip(X, Y)):
+        trainer.append(xseq_yseq[0], xseq_yseq[1], index % 10)
 
-    trainer.train(model_path)
+    parsers = []
+    for index in range(0,10):
+        trainer.train(model_path, index)
+        parsers.append(trainer.logparser)
+
+    return parsers
 
 
 # given a list of xml training filepaths & a parser module,
@@ -78,7 +83,7 @@ def renameModelFile(old_model):
         os.rename(old_model, renamed)
 
 
-def train(module, train_file_list, model_file) :
+def train(module, train_file_list, model_file, verbose=False) :
 
     training_data = list(readTrainingData(train_file_list, module.GROUP_LABEL))
     if not training_data:
@@ -110,6 +115,9 @@ def train(module, train_file_list, model_file) :
 
     print('\ntraining model on {num} training examples from {file_list}'.format(num=len(training_data), file_list=train_file_list))
 
-    trainModel(training_data, module, model_path)
+    results = trainModel(training_data, module, model_path)
+
+    for result in results:
+        print('\n', result.last_iteration)
 
     print('\ndone training! model file created: {path}'.format(path=model_path))
